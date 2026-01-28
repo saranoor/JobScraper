@@ -10,6 +10,7 @@ import os
 from selenium.webdriver.common.keys import Keys
 import argparse
 import urllib.parse
+import pandas as pd
 
 load_dotenv()
 
@@ -60,9 +61,20 @@ def scrape_linkedin_jobs(job_title: str, country: str):
             #     By.CSS_SELECTOR, "div.show-more-less-html__markup"
             # ).text
             description = driver.find_element(By.ID, "job-details").text
+            prefs = driver.find_elements(
+                By.CSS_SELECTOR,
+                "div.job-details-fit-level-preferences button strong"
+            )
+
+            tags = [p.text.strip() for p in prefs]
+
+            is_remote = "Remote" in tags
+            is_full_time = "Full-time" in tags
 
             jobs_data.append({
                 "job_title": title,
+                "remote": is_remote,
+                "full_time": is_full_time,
                 "job_description": description
             })
 
@@ -96,7 +108,14 @@ if __name__ == "__main__":
         country="Canada"
     )
 
-    with open("linkedin_jobs.json", "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2, ensure_ascii=False)
+    # with open("linkedin_jobs.json", "w", encoding="utf-8") as f:
+    #     json.dump(results, f, indent=2, ensure_ascii=False)
+
+    filename = f"{args.keywords}_{args.location}_linkedin.xlsx".replace(" ", "_")
+
+    df = pd.DataFrame(results)
+    df.to_excel(filename, index=False)
+
+    print(f"Saved to {filename}")
 
     print(f"Scraped {len(results)} jobs")

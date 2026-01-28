@@ -18,6 +18,7 @@ A simple Selenium-based Python script that logs into LinkedIn, searches jobs by 
 ## Requirements
 - Python 3.9+
 - Google Chrome
+- pandas
 
 ```bash
 pip install selenium webdriver-manager python-dotenv
