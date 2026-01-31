@@ -39,9 +39,17 @@ import time
 # Usage:
 # search_and_scrape(driver, "Backend Engineer", "Canada")
 
+import csv
+
 def scrape_glassdoor_jobs(job_title: str, country: str):
-    keyword = "Software Engineer"
-    location = "Canada"
+    filename = f"glassdoor_jobs_{job_title}_{country}.csv"
+    header = ["title", "company", "location", "salary", "link"]
+
+    with open(filename, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+    print(f"header are")
+
     options = uc.ChromeOptions()
     # options.add_argument(r"--user-data-dir=C:\Users\saran\AppData\Local\Google\Chrome\User Data")
 
@@ -75,7 +83,7 @@ def scrape_glassdoor_jobs(job_title: str, country: str):
         job_input.click() # Human-like click
 
         # Type the keyword slowly
-        for char in keyword:
+        for char in job_title:
             job_input.send_keys(char)
             time.sleep(random.uniform(0.1, 0.3)) 
 
@@ -86,7 +94,7 @@ def scrape_glassdoor_jobs(job_title: str, country: str):
         loc_input.send_keys(Keys.CONTROL + "a")
         loc_input.send_keys(Keys.BACKSPACE)
 
-        for char in location:
+        for char in country:
             loc_input.send_keys(char)
             time.sleep(random.uniform(0.1, 0.3))
 
@@ -130,6 +138,17 @@ def scrape_glassdoor_jobs(job_title: str, country: str):
                 except Exception as e:
                     # This skips things like ads or "Enhance your job" cards inside the list
                     continue
+            
+            if jobs_data: # Only write if we actually found new jobs
+                with open(filename, 'a', newline='', encoding='utf-8') as f:
+                    # Use extrasaction='ignore' to prevent crashes if a key is missing
+                    writer = csv.DictWriter(f, fieldnames=header)
+                    writer.writerows(jobs_data)
+                
+                # CLEAR the list after writing so you don't write duplicates to the CSV next time
+                jobs_data = [] 
+                print(f"Batch saved to {filename}")
+                time.sleep(1)
             last_processed_index = len(job_cards)
             show_more_button = driver.find_element(By.CSS_SELECTOR, '[data-test="load-more"]')
             driver.execute_script("arguments[0].click();", show_more_button)
@@ -148,6 +167,7 @@ def scrape_glassdoor_jobs(job_title: str, country: str):
                 # If the specific button fails, try clicking the 'Escape' key as a backup
                 driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
                 print("Could not find button, sent ESCAPE key instead.")
+            time.sleep(random.uniform(1.1, 2.3))
 
 
     except Exception as e:
@@ -161,7 +181,7 @@ if __name__ == "__main__":
     parser.add_argument("--location", required=True)
     args = parser.parse_args()
     results = scrape_glassdoor_jobs(
-        job_title="Backend Engineer",
-        country="Canada"
+        job_title=urllib.parse.quote(args.keywords),
+        country=urllib.parse.quote(args.location)
     )
 
