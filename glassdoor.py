@@ -1,45 +1,59 @@
-from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 import time
-import json
 from dotenv import load_dotenv
 import os
 from selenium.webdriver.common.keys import Keys
 import argparse
 import urllib.parse
-import pandas as pd
 import random
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import time
 import random
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 import undetected_chromedriver as uc
-
-load_dotenv()
-
-EMAIL = os.getenv("LINKEDIN_EMAIL")
-PASSWORD = os.getenv("LINKEDIN_PASSWORD")
-
-
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
-
-# Usage:
-# search_and_scrape(driver, "Backend Engineer", "Canada")
-
 import csv
+import undetected_chromedriver as uc
+import winsound
+import urllib.parse
+import argparse
+import logging
+import sys
+import re
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    handlers=[
+        logging.FileHandler("scraper.log", encoding="utf-8"),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    logging.critical(
+        "Uncaught exception",
+        exc_info=(exc_type, exc_value, exc_traceback)
+    )
+
+sys.excepthook = handle_exception
+
+def prompt_required(prompt_text):
+    while True:
+        value = input(prompt_text).strip()
+        if value:
+            return value
+        print("This field is required. Please try again.\n")
 
 def scrape_glassdoor_jobs(job_title: str, country: str):
     filename = f"glassdoor_jobs_{job_title}_{country}.csv"
@@ -48,38 +62,26 @@ def scrape_glassdoor_jobs(job_title: str, country: str):
     with open(filename, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(header)
-    print(f"header are")
 
     options = uc.ChromeOptions()
-    # options.add_argument(r"--user-data-dir=C:\Users\saran\AppData\Local\Google\Chrome\User Data")
 
-    # Create a specific path for the bot's profile
-    # This avoids using your 'Default' profile that might be open
-    # script_dir = os.path.dirname(os.path.abspath(__file__))
-    # user_data_path = os.path.join(script_dir, "glassdoor_profile")
-
-    # options.add_argument(f"--user-data-dir={user_data_path}")
-    # No need for --profile-directory=Default here, it will create its own
-    # options.add_argument(r'--profile-directory=Default')
     options.add_argument("--start-maximized")
     
-    # 2. Add a common User-Agent
     options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
-
-    # 3. Initialize the undetected driver. Undetected driver to It's a wrapper for Selenium that patches
-    #  the driver binary on the fly to hide the common fingerprints that websites look for.
-    driver = uc.Chrome(options=options, version_main=122)
+    try: 
+        sess = uc.Chrome()
+    except Exception as e: 
+        main_version_string = re.search(r"Current browser version is (\d+\.\d+\.\d+)", str(e)).group(1)
+        main_version = int(main_version_string.split(".")[0])
+        driver = uc.Chrome(options=options,version_main=main_version)
 
     try:
         # 3. Navigate to the login page
         print("Navigating to Glassdoor Login...")
-        # driver.get("https://www.glassdoor.com/member/profile/login")
-        # input("Solve CAPTCHA, then press ENTER to continue...")
         driver.get("https://www.glassdoor.com/Job/index.htm")
         wait = WebDriverWait(driver, 15)
         job_input = wait.until(EC.element_to_be_clickable((By.ID, "searchBar-jobTitle")))
 
-        job_input = wait.until(EC.element_to_be_clickable((By.ID, "searchBar-jobTitle")))
         job_input.click() # Human-like click
 
         # Type the keyword slowly
@@ -132,7 +134,6 @@ def scrape_glassdoor_jobs(job_title: str, country: str):
                     }
                     
                     jobs_data.append(job_info)
-                    # print(f"Found: {job_info['title']} at {job_info['company']}")
                     print(f"jobs info: {job_info}")
 
                 except Exception as e:
@@ -150,8 +151,14 @@ def scrape_glassdoor_jobs(job_title: str, country: str):
                 print(f"Batch saved to {filename}")
                 time.sleep(1)
             last_processed_index = len(job_cards)
-            show_more_button = driver.find_element(By.CSS_SELECTOR, '[data-test="load-more"]')
-            driver.execute_script("arguments[0].click();", show_more_button)
+            try:
+                show_more_button = driver.find_element(By.CSS_SELECTOR, '[data-test="load-more"]')
+                driver.execute_script("arguments[0].click();", show_more_button)
+            except Exception as e:
+                driver.save_screenshot("error_view.png")
+                print(f"Could not find the option to load more: {e}")
+                winsound.Beep(4000,3000)
+                break
 
             try:
                 # This looks for any button containing an SVG with 'Close' in the class or the button itself
@@ -166,22 +173,32 @@ def scrape_glassdoor_jobs(job_title: str, country: str):
             except Exception as e:
                 # If the specific button fails, try clicking the 'Escape' key as a backup
                 driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
-                print("Could not find button, sent ESCAPE key instead.")
+                print(f"Could not find button, sent ESCAPE key instead. {e}")
             time.sleep(random.uniform(1.1, 2.3))
 
 
     except Exception as e:
         print(f"An exception occured: {e}")
 
+    time.sleep(1200)
     
         
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--keywords", required=True)
-    parser.add_argument("--location", required=True)
-    args = parser.parse_args()
+    print("=" * 50)
+    print(" Glassdoor Job Scraper")
+    print("=" * 50)
+
+    title = prompt_required(
+        "Enter job title (e.g. software engineer): "
+    )
+
+    location = prompt_required(
+        "Enter location (e.g. Canada): "
+    )
+
+    print("\nStarting scraping...\n")
     results = scrape_glassdoor_jobs(
-        job_title=urllib.parse.quote(args.keywords),
-        country=urllib.parse.quote(args.location)
+        job_title=urllib.parse.quote(title),
+        country=urllib.parse.quote(location)
     )
 
