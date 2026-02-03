@@ -49,8 +49,6 @@ def get_random_user_agent():
 
 def should_exclude_job(title: str, exclude_terms: set) -> bool:
     """Check if job title contains any excluded terms."""
-    print(f"title: {title}")
-    print(f"exclude terms: {exclude_terms}")
     title_lower = title.lower()
     for term in exclude_terms:
         if term in title_lower:
@@ -161,7 +159,7 @@ def scrape_linkedin_jobs(position, location,remote, max_jobs):
         writer = csv.writer(f)
         writer.writerow(header)
     total_skipped_title = 0 
-    for i in range(0,max_jobs,10):
+    for i in range(180,max_jobs,10):
         
         current_page = i/10+1
         target_url = get_url_next_10_positions(position, location,i,remote)
@@ -195,7 +193,7 @@ def scrape_linkedin_jobs(position, location,remote, max_jobs):
                         "location": location_job,
                         "salary": None,
                         "description": None,
-                        "is_remote": "Yes" if remote else "No",
+                        "is_remote": "Yes" if remote=="REMOTE" else "NO",
                         "link": joburl
                     
                 }
@@ -244,14 +242,13 @@ if __name__ == "__main__":
         "Exclude senior/manager/lead positions? (y/n, default=n): "
     ).strip().lower() in ['y', 'yes']
     
-    # Ask if they want remote only
+    # Ask if what type of jobs they want
     remote = prompt_required(
         "Type of job? (ALL/ON-SITE/REMOTE/HYBRID, default=ALL): "
     )
 
-    print("\nStarting scraping in headless mode...")
-    # if exclude_easy:
-    #     print("[FILTER] Filtering out Easy Apply jobs")
+    print("\nStarting scraping as a guest(unauthenticated)...")
+
     if exclude_titles:
         print("[FILTER] Filtering out senior/manager/lead positions")
     if remote=='REMOTE':
