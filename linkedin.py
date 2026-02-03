@@ -159,7 +159,7 @@ def scrape_linkedin_jobs(position, location,remote, max_jobs):
         writer = csv.writer(f)
         writer.writerow(header)
     total_skipped_title = 0 
-    for i in range(180,max_jobs,10):
+    for i in range(0,max_jobs,10):
         
         current_page = i/10+1
         target_url = get_url_next_10_positions(position, location,i,remote)
@@ -232,11 +232,6 @@ if __name__ == "__main__":
     
     max_jobs = int(max_jobs_input) if max_jobs_input else 1000
 
-    # Ask if they want to exclude Easy Apply jobs
-    # exclude_easy = input(
-    #     "Exclude Easy Apply jobs? (y/n, default=n): "
-    # ).strip().lower() in ['y', 'yes']
-    
     # Ask if they want to exclude certain job titles
     exclude_titles = input(
         "Exclude senior/manager/lead positions? (y/n, default=n): "
