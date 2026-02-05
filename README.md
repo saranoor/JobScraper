@@ -100,7 +100,19 @@ To get more results within the `max_jobs = 1000` limit, split queries by:
 2. While creating a new account, sign up using **email and password**.  
    Do **not** sign up using Google, because the script accepts **email + password** only (to avoid unnecessary complexity).
 
-3. **[Necessary]** Set **`EMAIL`** and **`PASSWORD`** in the `.env` file.
+3. **[Necessary]** Set **`LINKEDIN_EMAIL`** and **`LINKEDIN_PASSWORD`** in the `.env` file.
+
+## Environment Configuration (.env)
+
+Create a `.env` file in the project root with the following values:
+
+```env
+# LinkedIn credentials (use a dedicated scraping account)
+EMAIL=your_linkedin_email@example.com
+PASSWORD=your_linkedin_password
+
+# Chrome profile directory (absolute path recommended)
+CHROME_PROFILE_DIR=C:\<xxxxx>\linkedin_profile
 
 4. **[Necessary]** Use a **high-speed VPN**. This is important because long scraping runs can otherwise result in timeout errors.
 
@@ -114,7 +126,7 @@ To get more results within the `max_jobs = 1000` limit, split queries by:
 6. **[Recommendation]** Use a VPN and do **not** use your direct IP. There is a chance your IP may be blocked if LinkedIn/Glassdoor/ZipRecruiter detects bot activity.
 
 7. **[Recommendation]** Create a folder for your Chrome profile directory and set **`CHROME_PROFILE_DIR`** in `.env`.  
-   This makes Chrome reuse the same profile (cookies/session) instead of a fresh temporary one, helping reduce CAPTCHA/security prompts and keeping you logged in.
+   This makes Chrome reuse the same profile (cookies/session) instead of a fresh temporary one, helping reduce CAPTCHA/security prompts and keeping you logged in. Please see step 3.
 
 8. **[Recommendation]** If everything runs perfectly once and you have `CHROME_PROFILE_DIR` set, consider commenting out:
    ```python
