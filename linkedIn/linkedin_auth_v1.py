@@ -112,7 +112,6 @@ def scrape_linkedin_jobs(
     mode_of_work: str,
     headless: bool,
 ):
-    logger.info("The line should be return in scraper.log")
     options = uc.ChromeOptions()
     if headless:
         options.add_argument("--headless=new")
@@ -190,7 +189,12 @@ def scrape_linkedin_jobs(
 
         logging.info("Navigating to Linkedin Authentication required")
         # linkedin_login(driver, EMAIL, PASSWORD)
-        input("Solve CAPTCHA, then press ENTER to continue...")
+        logging.warning("=" * 80)
+        logging.warning("⚠️  ACTION REQUIRED: SOLVE CAPTCHA IN BROWSER (only non headless) ⚠️")
+        logging.warning("⚠️  After solving, return here and press ENTER to continue")
+        logging.warning("⚠️  If in headless, just press ENTER to continue")
+        logging.warning("=" * 80)
+        input("Solve CAPTCHA (non headless mode), then press ENTER to continue...")
 
         base_url = (
             "https://www.linkedin.com/jobs/search/"
@@ -252,7 +256,7 @@ def scrape_linkedin_jobs(
                 logging.debug(f"Iteration {i+1}: Unique jobs collected on this url: {len(all_job_ids)}")
 
                 if len(all_job_ids) >= 25:
-                    logging.info("Target reached.")
+                    logging.debu("All cards on this page are found.")
                     break
 
             for card in job_cards:
