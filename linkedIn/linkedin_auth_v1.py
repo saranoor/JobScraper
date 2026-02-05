@@ -364,7 +364,7 @@ def scrape_linkedin_jobs(
                     )
 
                     total_scraped += 1
-                    logging.info(f"Total scraped at the moment: {total_scraped}")
+                    logging.debug(f"Total scraped at the moment: {total_scraped}")
 
                 except Exception as e:
                     logging.error(
