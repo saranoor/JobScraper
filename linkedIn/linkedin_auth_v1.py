@@ -1,13 +1,9 @@
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 import undetected_chromedriver as uc
 import time
 from dotenv import load_dotenv
 import os
 from selenium.webdriver.common.keys import Keys
-import argparse
-import urllib.parse
-import pandas as pd
 import random
 import re
 from selenium.webdriver.common.keys import Keys
@@ -44,7 +40,8 @@ EXCLUDE_TERMS = {
     # 'consultant'
 }
 
-current_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+current_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -78,7 +75,7 @@ def prompt_required(prompt_text):
         value = input(prompt_text).strip()
         if value:
             return value
-        print("This field is required. Please try again.\n")
+        logging.info("This field is required. Please try again.\n")
 
 
 def linkedin_login(driver, email, password):
@@ -157,13 +154,13 @@ def scrape_linkedin_jobs(
             # main_version_string = re.search(r"Current browser version is (\d+\.\d+\.\d+)", str(e)).group(1)
             # main_version = int(main_version_string.split(".")[0])
             # driver = uc.Chrome(options=options,version_main=main_version)
-            print(f"First attempt failed, detecting Chrome version...")
+            logging.info(f"First attempt failed, detecting Chrome version...")
             # Extract Chrome version from error
             if "Current browser version is" in str(e):
                 version_match = re.search(r"Current browser version is (\d+)\.", str(e))
                 if version_match:
                     main_version = int(version_match.group(1))
-                    print(
+                    logging.info(
                         f"Detected Chrome version {main_version}, creating new driver..."
                     )
 
@@ -191,8 +188,8 @@ def scrape_linkedin_jobs(
             else:
                 raise
 
-        print("Navigating to Linkedin Authentication required")
-        linkedin_login(driver, EMAIL, PASSWORD)
+        logging.info("Navigating to Linkedin Authentication required")
+        # linkedin_login(driver, EMAIL, PASSWORD)
         input("Solve CAPTCHA, then press ENTER to continue...")
 
         base_url = (
@@ -220,7 +217,7 @@ def scrape_linkedin_jobs(
             )  # Calculate the 'start' parameter (LinkedIn uses increments of 25)
             search_url = f"{base_url}&start={start_val}"
 
-            print(f"search url: {search_url}")
+            logging.debug(f"search url: {search_url}")
             driver.get(search_url)
             time.sleep(random.randint(1, 3))
 
@@ -232,7 +229,7 @@ def scrape_linkedin_jobs(
             job_cards = driver.find_elements(By.CSS_SELECTOR, "div.job-card-container")
 
             if not job_cards:
-                print("No more jobs found. Ending search.")
+                logging.info("No more jobs found. Ending search.")
                 break
 
             scrollable_div = driver.find_element(
@@ -252,15 +249,15 @@ def scrape_linkedin_jobs(
                     if job_id:
                         all_job_ids.add(job_id)
 
-                print(f"Iteration {i+1}: Unique jobs collected on this url: {len(all_job_ids)}")
+                logging.debug(f"Iteration {i+1}: Unique jobs collected on this url: {len(all_job_ids)}")
 
                 if len(all_job_ids) >= 25:
-                    print("Target reached.")
+                    logging.info("Target reached.")
                     break
 
             for card in job_cards:
                 card_num += 1
-                print(f"Clicking on card: {card_num}")
+                logging.debug(f"Clicking on card: {card_num}")
                 try:
                     card.click()
                     time.sleep(random.randint(1, 3))
@@ -280,7 +277,7 @@ def scrape_linkedin_jobs(
 
                     if exclude_titles and should_exclude_job(title, EXCLUDE_TERMS):
                         total_skipped_title += 1
-                        print(f"[SKIP-TITLE] {title} (Total: {total_skipped_title})")
+                        logging.debug(f"[SKIP-TITLE] {title} (Total: {total_skipped_title})")
                         continue
 
                     if exclude_easy_apply:
@@ -289,7 +286,7 @@ def scrape_linkedin_jobs(
                                 By.XPATH, "//button[contains(., 'Easy Apply')]"
                             )
                             total_skipped_easy += 1
-                            print(
+                            logging.info(
                                 f"[SKIP-EASY APPLY] {title} (Total: {total_skipped_easy})"
                             )
                             continue
@@ -305,7 +302,7 @@ def scrape_linkedin_jobs(
 
                     tags = [p.text.strip() for p in prefs]
 
-                    # print(f"tags: {tags}")
+                    # logging.info(f"tags: {tags}")
                     if mode_of_work == "ALL":
                         if "Remote" in tags:
                             work_mode = "remote"
@@ -362,20 +359,18 @@ def scrape_linkedin_jobs(
                         }
                     )
 
-                    # print(jobs_data[-1]["title"])
-
                     total_scraped += 1
-                    print(f"Total scraped at the moment: {total_scraped}")
+                    logging.info(f"Total scraped at the moment: {total_scraped}")
 
                 except Exception as e:
-                    print(
+                    logging.error(
                         f"Could not scrape card {card_num} because an error occured: {e}"
                     )
                     total_missed_card += 1
-                    print(f"missed card number: {total_missed_card}")
+                    logging.error(f"missed card number: {total_missed_card}")
 
                 if max_jobs!= None and card_num >=max_jobs:
-                    print(f"Maximum jobs target reached! Aborting scraping")
+                    logging.info(f"Maximum jobs target reached! Aborting scraping")
                     abort_scraping = True
                     break
 
@@ -383,48 +378,48 @@ def scrape_linkedin_jobs(
                 with open(filename, "a", newline="", encoding="utf-8") as f:
                     writer = csv.DictWriter(f, fieldnames=header)
                     writer.writerows(jobs_data)
-                print(f"[SAVED] Batch saved to {filename}")
+                logging.info(f"[SAVED] Batch saved to {filename}")
                 time.sleep(1)
             if abort_scraping:
                 break
             page += 1
 
     except Exception as e:
-        print(f"[ERROR] An exception occurred: {e}")
+        logging.info(f"[ERROR] An exception occurred: {e}")
         logger.error(f"Error during scraping: {e}", exc_info=True)
     finally:
         if driver:
-            print(f"Total cards found: {card_num}")
-            print(f"Total cards scrape: {total_scraped}")
-            print(
+            logging.info(f"Total cards found: {card_num}")
+            logging.info(f"Total cards scrape: {total_scraped}")
+            logging.info(
                 f"Total card missed(this number do not include skipped title, and skipped easy): {total_missed_card}"
             )
-            print(f"Total cards skipped title: {total_skipped_title}")
-            print(f"Total cards skippled easy:{total_skipped_easy}")
+            logging.info(f"Total cards skipped title: {total_skipped_title}")
+            logging.info(f"Total cards skippled easy:{total_skipped_easy}")
             driver.quit()
 
 
 if __name__ == "__main__":
-    print("=" * 50)
-    print(" LinkedIn (Authentication Version) Job Scraper")
-    print(" Please have LinkedIn login credentials ready.")
-    print("")
-    print(" Recommendations:")
-    print(" - Do NOT use headless mode on the first run.")
-    print(" - Create a dedicated folder and use it as your Chrome profile.")
-    print("   This stores cookies, login sessions, local storage, site permissions,")
-    print("   and keeps your LinkedIn authentication persistent.")
-    print("")
-    print(" Special Recommendation:")
-    print(" - Use a stable, high-speed VPN connection if available.")
-    print(" - Avoid frequently changing locations during a scraping session.")
-    print(" - Consistent IPs help reduce timeouts and unexpected page blocks.")
-    print("")
-    print(" WARNING:")
-    print(" - Do NOT open the same Chrome profile in a normal Chrome window.")
-    print(" - Use one profile per browser instance only.")
-    print(" - Reusing or locking the profile may cause browser crashes or login issues.")
-    print("=" * 50)
+    logging.info("=" * 50)
+    logging.info(" LinkedIn (Authentication Version) Job Scraper")
+    logging.info(" Please have LinkedIn login credentials ready.")
+    logging.info("")
+    logging.info(" Recommendations:")
+    logging.info(" - Do NOT use headless mode on the first run.")
+    logging.info(" - Create a dedicated folder and use it as your Chrome profile.")
+    logging.info("   This stores cookies, login sessions, local storage, site permissions,")
+    logging.info("   and keeps your LinkedIn authentication persistent.")
+    logging.info("")
+    logging.info(" Special Recommendation:")
+    logging.info(" - Use a stable, high-speed VPN connection if available.")
+    logging.info(" - Avoid frequently changing locations during a scraping session.")
+    logging.info(" - Consistent IPs help reduce timeouts and unexpected page blocks.")
+    logging.info("")
+    logging.info(" WARNING:")
+    logging.info(" - Do NOT open the same Chrome profile in a normal Chrome window.")
+    logging.info(" - Use one profile per browser instance only.")
+    logging.info(" - Reusing or locking the profile may cause browser crashes or login issues.")
+    logging.info("=" * 50)
 
     title = prompt_required(
         "Enter job title (e.g. software engineer): "
@@ -456,25 +451,25 @@ if __name__ == "__main__":
 
     headless = headless_mode not in ['n', 'no']
 
-    print("\nStarting scraping...")
+    logging.info("\nStarting scraping...")
     if headless:
-        print("[MODE] Headless (invisible browser)")
+        logging.info("[MODE] Headless (invisible browser)")
     else:
-        print("[MODE] Visible browser")
+        logging.info("[MODE] Visible browser")
 
     if exclude_easy:
-        print("[FILTER] Filtering out Easy Apply jobs")
+        logging.info("[FILTER] Filtering out Easy Apply jobs")
     if exclude_titles:
-        print("[FILTER] Filtering out senior/manager/lead positions")
+        logging.info("[FILTER] Filtering out senior/manager/lead positions")
 
-    print()
+    logging.info("")
 
     results = scrape_linkedin_jobs(
-        job_title="Software Engineer",
+        job_title=title,
         location=location,
         max_jobs=max_jobs,
         exclude_easy_apply=False,
         exclude_titles=False,
         mode_of_work="ALL",
-        headless=False,
+        headless=headless,
     )
