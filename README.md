@@ -74,106 +74,48 @@ The script will start scraping automatically.
   ```
 
 ---
+# LinkedIn Job Scraper (Unauthenticated + Authenticated)
 
-# LinkedIn unauthenticate scraping script
-1. [Limitation] in this mode the script can only scrape a max_jobs=1000
-2. [Limitation] easy apply jobs may appear with apply Tags
-3. [Recommendations] To get more result from max_jobs=1000
-    # Split queries:
-    # by f_WT (1,2,3)
-    # by location granularity (state/city)
-    # by time filters (f_TPR)
-    # distance filters
+## LinkedIn Unauthenticated Scraping Script
 
-# Linkedin Authenticate scraping script
+### Limitations
+1. **[Limitation]** In this mode, the script can scrape a maximum of **`max_jobs = 1000`**.
+2. **[Limitation]** Easy Apply jobs may appear with **Apply** tags.
 
-1. [Necessary] For LinkedIn Authentication, you need to have credentials of a LinkedIn account. 
-I suggest creating a new accoutn for scraping. There are chances that your account may be blocked, 
-black listed, therefore, based upon my technical experience I do not recommedn using your professional 
-linkedIn account. 
+### 🟢 Recommendations
+To get more results within the `max_jobs = 1000` limit, split queries by:
+- `f_WT` (1, 2, 3)
+- Location granularity (country/state/city)
+- Time filters (`f_TPR`)
+- Distance filters
 
-2. While creating your new account, I recommend sign up using email and password. Do not sing up using 
-google. As the script only accepts email and password to avoid unncessary complexity of signing up with 
-google.
+---
 
-3. [Necessary] Set email and password in .env file
+## LinkedIn Authenticated Scraping Script
 
-3. [Necessary] Use high speed vpn. This is important as other many jobs scraping will result in timeout error. 
+### 🟩 Necessary
+1. **[Necessary]** For LinkedIn authentication, you need credentials of a LinkedIn account.  
+   I suggest creating a **new account for scraping**. There are chances your account may be blocked/blacklisted, so I do **not** recommend using your professional LinkedIn account.
 
-4. [Recommendation] Use VPN, please please do not use your ip directly. There is a chance of your IP being blocked if 
-Linkedin/Glassdoor/Zip recruiter finds out a script/bot is being used.
+2. While creating a new account, sign up using **email and password**.  
+   Do **not** sign up using Google, because the script accepts **email + password** only (to avoid unnecessary complexity).
 
-5. [Recommendation] Create a folder for chrome profile directory. Set CHROME_PROFILE_DIR in .env . Use this folder as your browser profile instead of a fresh, temporary one. Using a custom Chrome user data directory is beneficall as the browser keeps cookies and stays logged in to LinkedIn. This would help avoid frequent Recaptcah and security questions.
+3. **[Necessary]** Set **`EMAIL`** and **`PASSWORD`** in the `.env` file.
 
-6. [Necessary] Use non headless mode for the first time as while logging in there will be captcha, security question and a need to input a verification code(that you will receive on gmail)
+4. **[Necessary]** Use a **high-speed VPN**. This is important because long scraping runs can otherwise result in timeout errors.
 
-7. [Recommendation] If everything runs perfectly one time and you have HROME_PROFILE_DIR i recommend commenting out linkedin_login(driver, EMAIL, PASSWORD)
+5. **[Necessary]** Use **non-headless mode** the first time.  
+   During login you may face:
+   - CAPTCHA
+   - Security questions
+   - Verification code (sent to your email)
 
+### 🟥 Recommended
+6. **[Recommendation]** Use a VPN and do **not** use your direct IP. There is a chance your IP may be blocked if LinkedIn/Glassdoor/ZipRecruiter detects bot activity.
 
-LinkedIn Unauthenticated Scraping Script
-Limitations
+7. **[Recommendation]** Create a folder for your Chrome profile directory and set **`CHROME_PROFILE_DIR`** in `.env`.  
+   This makes Chrome reuse the same profile (cookies/session) instead of a fresh temporary one, helping reduce CAPTCHA/security prompts and keeping you logged in.
 
-[Limitation] In unauthenticated mode, the script can scrape up to max_jobs = 1000 only.
-
-[Limitation] Easy Apply jobs may appear with Apply tags instead of full descriptions.
-
-<span style="color:red">Recommendations</span>
-
-To maximize results within the max_jobs = 1000 limit, split queries using:
-
-f_WT filters (1, 2, 3)
-
-Location granularity (country → state → city)
-
-Time filters (f_TPR)
-
-Distance filters
-
-LinkedIn Authenticated Scraping Script
-<span style="color:green">Necessary</span>
-
-You must have LinkedIn account credentials (email + password).
-It is strongly advised to create a separate LinkedIn account for scraping.
-There is a real risk of account blocking or blacklisting, so do not use your professional LinkedIn account.
-
-Sign up using email and password only.
-❌ Do not sign up with Google, as the script supports email/password authentication only to avoid unnecessary complexity.
-
-Set the following in the .env file:
-
-EMAIL
-
-PASSWORD
-
-Use a high-speed VPN.
-Slow or unstable networks often lead to timeouts during large scraping runs.
-
-Run the script in non-headless mode on the first run.
-You will likely encounter:
-
-CAPTCHA
-
-Security questions
-
-Email verification codes (sent to Gmail)
-
-<span style="color:red">Recommendations</span>
-
-Do not use your real IP address.
-Always use a VPN to reduce the risk of IP blocking by LinkedIn, Glassdoor, or ZipRecruiter.
-
-Create a dedicated Chrome profile directory and set CHROME_PROFILE_DIR in .env.
-Using a custom Chrome user data directory allows the browser to:
-
-Persist cookies
-
-Stay logged in
-
-Reduce CAPTCHA and security challenges
-
-If the script runs successfully at least once and CHROME_PROFILE_DIR is set, you can safely comment out:
-
-linkedin_login(driver, EMAIL, PASSWORD)
-
-
-This prevents repeated login attempts and lowers detection risk.
+8. **[Recommendation]** If everything runs perfectly once and you have `CHROME_PROFILE_DIR` set, consider commenting out:
+   ```python
+   linkedin_login(driver, EMAIL, PASSWORD)
