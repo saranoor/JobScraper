@@ -108,3 +108,72 @@ Linkedin/Glassdoor/Zip recruiter finds out a script/bot is being used.
 6. [Necessary] Use non headless mode for the first time as while logging in there will be captcha, security question and a need to input a verification code(that you will receive on gmail)
 
 7. [Recommendation] If everything runs perfectly one time and you have HROME_PROFILE_DIR i recommend commenting out linkedin_login(driver, EMAIL, PASSWORD)
+
+
+LinkedIn Unauthenticated Scraping Script
+Limitations
+
+[Limitation] In unauthenticated mode, the script can scrape up to max_jobs = 1000 only.
+
+[Limitation] Easy Apply jobs may appear with Apply tags instead of full descriptions.
+
+<span style="color:red">Recommendations</span>
+
+To maximize results within the max_jobs = 1000 limit, split queries using:
+
+f_WT filters (1, 2, 3)
+
+Location granularity (country → state → city)
+
+Time filters (f_TPR)
+
+Distance filters
+
+LinkedIn Authenticated Scraping Script
+<span style="color:green">Necessary</span>
+
+You must have LinkedIn account credentials (email + password).
+It is strongly advised to create a separate LinkedIn account for scraping.
+There is a real risk of account blocking or blacklisting, so do not use your professional LinkedIn account.
+
+Sign up using email and password only.
+❌ Do not sign up with Google, as the script supports email/password authentication only to avoid unnecessary complexity.
+
+Set the following in the .env file:
+
+EMAIL
+
+PASSWORD
+
+Use a high-speed VPN.
+Slow or unstable networks often lead to timeouts during large scraping runs.
+
+Run the script in non-headless mode on the first run.
+You will likely encounter:
+
+CAPTCHA
+
+Security questions
+
+Email verification codes (sent to Gmail)
+
+<span style="color:red">Recommendations</span>
+
+Do not use your real IP address.
+Always use a VPN to reduce the risk of IP blocking by LinkedIn, Glassdoor, or ZipRecruiter.
+
+Create a dedicated Chrome profile directory and set CHROME_PROFILE_DIR in .env.
+Using a custom Chrome user data directory allows the browser to:
+
+Persist cookies
+
+Stay logged in
+
+Reduce CAPTCHA and security challenges
+
+If the script runs successfully at least once and CHROME_PROFILE_DIR is set, you can safely comment out:
+
+linkedin_login(driver, EMAIL, PASSWORD)
+
+
+This prevents repeated login attempts and lowers detection risk.
