@@ -106,7 +106,7 @@ def create_filename(title, location):
 def scrape_linkedin_jobs(
     job_title: str,
     location: str,
-    max_jobs: str,
+    max_jobs: int,
     exclude_easy_apply: bool,
     exclude_titles: bool,
     mode_of_work: str,
@@ -207,9 +207,11 @@ def scrape_linkedin_jobs(
         total_skipped_title = 0
         total_skipped_easy = 0
 
+        abort_scraping = False
+
         while True:
             start_val = (
-                page * 25
+                page * 100
             )  # Calculate the 'start' parameter (LinkedIn uses increments of 25)
             search_url = f"{base_url}&start={start_val}"
 
@@ -367,12 +369,19 @@ def scrape_linkedin_jobs(
                     total_missed_card += 1
                     print(f"missed card number: {total_missed_card}")
 
+                if max_jobs!= None and card_num >=max_jobs:
+                    print(f"Maximum jobs target reached! Aborting scraping")
+                    abort_scraping = True
+                    break
+
             if jobs_data:
                 with open(filename, "a", newline="", encoding="utf-8") as f:
                     writer = csv.DictWriter(f, fieldnames=header)
                     writer.writerows(jobs_data)
                 print(f"[SAVED] Batch saved to {filename}")
                 time.sleep(1)
+            if abort_scraping:
+                break
             page += 1
 
     except Exception as e:
@@ -396,17 +405,17 @@ if __name__ == "__main__":
     print(" Please have LinkedIn Login Credentials ready...")
     print("=" * 50)
 
-    # title = prompt_required(
-    #     "Enter job title (e.g. software engineer): "
-    # )
+    title = prompt_required(
+        "Enter job title (e.g. software engineer): "
+    )
 
     location = prompt_required("Enter location (e.g. Canada): ")
 
-    # max_jobs_input = input(
-    #     "Enter max number of jobs to scrape (press Enter for unlimited): "
-    # ).strip()
+    max_jobs_input = input(
+        "Enter max number of jobs to scrape (press Enter for unlimited): "
+    ).strip()
 
-    # max_jobs = int(max_jobs_input) if max_jobs_input else None
+    max_jobs = int(max_jobs_input) if max_jobs_input else None
 
     exclude_easy = input(
         "Exclude Easy Apply jobs? (y/n, default=y): "
@@ -442,7 +451,7 @@ if __name__ == "__main__":
     results = scrape_linkedin_jobs(
         job_title="Software Engineer",
         location=location,
-        max_jobs=None,
+        max_jobs=max_jobs,
         exclude_easy_apply=False,
         exclude_titles=False,
         mode_of_work="ALL",
