@@ -302,9 +302,9 @@ def scrape_linkedin_jobs(
 
                     print(f"tags: {tags}")
                     if mode_of_work == "ALL":
-                        if "remote" in tags:
+                        if "Remote" in tags:
                             work_mode = "remote"
-                        elif "hybrid" in tags:
+                        elif "Hybrid" in tags:
                             work_mode = "hybrid"
                         elif "On-site" in tags or "onsite" in tags:
                             work_mode = "onsite"
