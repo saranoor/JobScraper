@@ -300,7 +300,7 @@ def scrape_linkedin_jobs(
 
                     tags = [p.text.strip() for p in prefs]
 
-                    print(f"tags: {tags}")
+                    # print(f"tags: {tags}")
                     if mode_of_work == "ALL":
                         if "Remote" in tags:
                             work_mode = "remote"
@@ -357,7 +357,7 @@ def scrape_linkedin_jobs(
                         }
                     )
 
-                    print(jobs_data[-1]["title"])
+                    # print(jobs_data[-1]["title"])
 
                     total_scraped += 1
                     print(f"Total scraped at the moment: {total_scraped}")
