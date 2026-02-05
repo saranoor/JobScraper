@@ -113,6 +113,7 @@ PASSWORD=your_linkedin_password
 
 # Chrome profile directory (absolute path recommended)
 CHROME_PROFILE_DIR=C:\<xxxxx>\linkedin_profile
+```
 
 4. **[Necessary]** Use a **high-speed VPN**. This is important because long scraping runs can otherwise result in timeout errors.
 
