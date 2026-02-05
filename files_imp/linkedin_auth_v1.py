@@ -24,6 +24,7 @@ load_dotenv()
 
 EMAIL = os.getenv("LINKEDIN_EMAIL")
 PASSWORD = os.getenv("LINKEDIN_PASSWORD")
+CHROME_PROFILE_DIR = os.getenv("CHROME_PROFILE_DIR")
 
 # Terms to exclude from job titles
 EXCLUDE_TERMS = {
@@ -125,9 +126,11 @@ def scrape_linkedin_jobs(
     options.add_argument(
         "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     )
-    options.add_argument(
-        r"--user-data-dir=C:\New_partition\Projects_learning\LinkedinProfile"
-    )
+    # Use a custom Chrome user data directory so the browser keeps cookies and stays logged in to LinkedIn
+    # options.add_argument(
+    #     r"--user-data-dir=C:\New_partition\Projects_learning\LinkedinProfile"
+    # )
+    options.add_argument(f"--user-data-dir={CHROME_PROFILE_DIR}")
     driver = None
     filename = create_filename(job_title, location)
     header = [
@@ -247,7 +250,7 @@ def scrape_linkedin_jobs(
                     if job_id:
                         all_job_ids.add(job_id)
 
-                print(f"Iteration {i+1}: Unique jobs collected: {len(all_job_ids)}")
+                print(f"Iteration {i+1}: Unique jobs collected on this url: {len(all_job_ids)}")
 
                 if len(all_job_ids) >= 25:
                     print("Target reached.")
@@ -401,8 +404,24 @@ def scrape_linkedin_jobs(
 
 if __name__ == "__main__":
     print("=" * 50)
-    print(" LinkedIn (Authentication verion) Job Scraper")
-    print(" Please have LinkedIn Login Credentials ready...")
+    print(" LinkedIn (Authentication Version) Job Scraper")
+    print(" Please have LinkedIn login credentials ready.")
+    print("")
+    print(" Recommendations:")
+    print(" - Do NOT use headless mode on the first run.")
+    print(" - Create a dedicated folder and use it as your Chrome profile.")
+    print("   This stores cookies, login sessions, local storage, site permissions,")
+    print("   and keeps your LinkedIn authentication persistent.")
+    print("")
+    print(" Special Recommendation:")
+    print(" - Use a stable, high-speed VPN connection if available.")
+    print(" - Avoid frequently changing locations during a scraping session.")
+    print(" - Consistent IPs help reduce timeouts and unexpected page blocks.")
+    print("")
+    print(" WARNING:")
+    print(" - Do NOT open the same Chrome profile in a normal Chrome window.")
+    print(" - Use one profile per browser instance only.")
+    print(" - Reusing or locking the profile may cause browser crashes or login issues.")
     print("=" * 50)
 
     title = prompt_required(
