@@ -128,11 +128,13 @@ CHROME_PROFILE_DIR=C:\<xxxxx>\linkedin_profile
 
 4. **[Necessary]** Use a **high-speed VPN**. This is important because long scraping runs can otherwise result in timeout errors.
 
-5. **[Necessary]** Use **non-headless mode** the first time.  
+5. **[Necessary]** Use **non-headless mode** the first time.
    During login you may face:
    - CAPTCHA
    - Security questions
    - Verification code (sent to your email)
+
+6. If non headless, keep window maximized and in focus. Otherwise it will not load LinkedIn.
 
 ### 🟥 Recommended
 6. **[Recommendation]** Use a VPN and do **not** use your direct IP. There is a chance your IP may be blocked if LinkedIn/Glassdoor/ZipRecruiter detects bot activity.
@@ -150,5 +152,7 @@ undetected-chromedriver==3.5.5
 python-dotenv==1.2.1
 beautifulsoup4==4.14.3
 requests==2.32.5
-urllib3==2.6.3 -->
+urllib3==2.6.3 
+setuptools==80.10.2 -->
+
 
