@@ -78,6 +78,17 @@ The script will start scraping automatically.
 
 ## LinkedIn Unauthenticated Scraping Script
 
+Plese ensure the following libraries are installed:
+
+```
+selenium==4.40.0
+undetected-chromedriver==3.5.5
+python-dotenv==1.2.1
+beautifulsoup4==4.14.3
+requests==2.32.5
+urllib3==2.6.3
+```
+
 ### Limitations
 1. **[Limitation]** In this mode, the script can scrape a maximum of **`max_jobs = 1000`**.
 2. **[Limitation]** Easy Apply jobs may appear with **Apply** tags.
@@ -132,3 +143,12 @@ CHROME_PROFILE_DIR=C:\<xxxxx>\linkedin_profile
 8. **[Recommendation]** If everything runs perfectly once and you have `CHROME_PROFILE_DIR` set, consider commenting out:
    ```python
    linkedin_login(driver, EMAIL, PASSWORD)
+
+
+<!-- selenium==4.40.0
+undetected-chromedriver==3.5.5
+python-dotenv==1.2.1
+beautifulsoup4==4.14.3
+requests==2.32.5
+urllib3==2.6.3 -->
+
