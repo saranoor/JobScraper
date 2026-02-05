@@ -8,6 +8,20 @@ import math
 import re
 import time
 import csv
+import logging
+
+current_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    handlers=[
+        logging.FileHandler(f"scraper_linkedin_unauth_{current_timestamp}.log", encoding="utf-8"),
+        logging.StreamHandler(),
+    ],
+)
+
+logger = logging.getLogger(__name__)
 
 remote_dict = {
     'ALL': '',
@@ -17,7 +31,7 @@ remote_dict = {
 }
 
 EXCLUDE_TERMS = {
-    'lead', 'manager', 'senior', 'principal', 'director', 'vp', 'vice president',
+    'lead', 'senior', 'principal', 'director', 'vp', 'vice president',
     # 'sr ', 'ciso', 'chief', 'level 2', 'tier 3', 'associate director', 'l3',
     # 'architecture', 'sme', 'architect', 'field', 'software developer',
     # 'data scientist', 'scientist', 'federal account executive',
@@ -32,7 +46,7 @@ def prompt_required(prompt_text):
         value = input(prompt_text).strip()
         if value:
             return value
-        print("This field is required. Please try again.\n")
+        logging.info("This field is required. Please try again.\n")
 
 def get_random_user_agent():
 
@@ -55,7 +69,7 @@ def should_exclude_job(title: str, exclude_terms: set) -> bool:
             return True
     return False
 
-def generate_main_linkedin_url(position, location,remote):
+def generate_main_linkedin_url(position, location, remote, distance):
    
     # Base URL for LinkedIn job search
     base_url = 'https://www.linkedin.com/jobs/search/'
@@ -66,8 +80,8 @@ def generate_main_linkedin_url(position, location,remote):
     # Construct the query parameters
     query_params = f'?keywords={url_friendly_position}&location={location}'
     
-    # if distance:
-    #     query_params += f'&distance={distance}'
+    if distance:
+        query_params += f'&distance={distance}'
 
     if remote:
         remote_value = remote_dict.get(remote, '')
@@ -75,7 +89,7 @@ def generate_main_linkedin_url(position, location,remote):
     
     # Combine base URL with query parameters
     url_search = base_url + query_params
-    print(f"url search: {url_search}")
+    logging.info(f"url search: {url_search}")
     return url_search
 
 def fetch_jobs_until_success(url):
@@ -93,12 +107,11 @@ def get_url_next_10_positions(position, location,start_position, remote='ALL'):
     # Construct the query parameters
     query_params = f'?keywords={url_friendly_position}&location={location}'
     
-    # if distance:
-    #     query_params += f'&distance={distance}'
+    if distance:
+        query_params += f'&distance={distance}'
 
     if remote:
         remote_value = remote_dict.get(remote, '')
-        print(f"remote value: {remote_value}")
         query_params += f'&f_WT={remote_value}'
     query_params += f'&position=1&pageNum=0&start={start_position}'
     
@@ -122,32 +135,12 @@ def scrape_description_and_salary(headers, job_url):
 
     return description, salary
 
-
-def scrape_linkedin_jobs(position, location, remote, max_jobs):
-    header = get_random_user_agent()
-
-    main_url = generate_main_linkedin_url(position, location, remote)
-    print(f"main_url: {main_url}")
-    response = fetch_jobs_until_success(main_url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    raw_text = soup.find(
-        'span',
-        {'class': 'results-context-header__job-count'}
-    ).get_text(strip=True)
-
-    all_jobs = int(re.sub(r'[^\d]', '', raw_text))
-    # all_jobs = int(soup.find('span', {'class': 'results-context-header__job-count'}).text)
-    print(f'There are a total of {all_jobs} jobs that will be scraped based on the given conditions.')
-
-    jobs = []
-    total_pages = math.ceil(all_jobs/10)
-
+def create_file(header, position, remote, location):
     date_strf = datetime.datetime.now().strftime('%Y-%m-%d')
     pos = position.replace(" ", "_")
     # Start with the base file name
     file_name = f'LinkedIn_Jobs_{pos}_{location}'
 
-    header = ["title", "company", "location", "salary", "description", "is_remote", "link"]
 
     # Append remote if it's not 'ALL'
     if remote != 'ALL':
@@ -158,15 +151,37 @@ def scrape_linkedin_jobs(position, location, remote, max_jobs):
     with open(file_name, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(header)
+    return file_name
+
+def scrape_linkedin_jobs(position, location, remote, max_jobs, distance):
+    # header = get_random_user_agent()
+    main_url = generate_main_linkedin_url(position, location, remote, distance)
+    logging.info(f"main_url: {main_url}")
+    response = fetch_jobs_until_success(main_url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    raw_text = soup.find(
+        'span',
+        {'class': 'results-context-header__job-count'}
+    ).get_text(strip=True)
+
+    all_jobs = int(re.sub(r'[^\d]', '', raw_text))
+    logging.info(f'There are a total of {all_jobs} jobs that will be scraped based on the given conditions.')
+
+    jobs = []
+    total_pages = math.ceil(all_jobs/10)
+
+    header = ["title", "company", "location", "salary", "description", "is_remote", "link"]
+
+    file_name = create_file(header, position, remote, location)
 
     total_skipped_title = 0 
 
     for i in range(0,max_jobs,10):
         current_page = i/10+1
         target_url = get_url_next_10_positions(position, location, i, remote)
-        print(f"taget url: {target_url}")
+        logging.info(f"taget url: {target_url}")
         response = fetch_jobs_until_success(target_url)
-        print(f"Parsing data for page: {int(current_page)}/{total_pages}")
+        logging.info(f"Parsing data for page: {int(current_page)}/{total_pages}")
         
         soup = BeautifulSoup(response.content, 'html.parser')
         alljobs = soup.find_all('li')
@@ -177,7 +192,7 @@ def scrape_linkedin_jobs(position, location, remote, max_jobs):
                 title = info.find('h3', class_="base-search-card__title").text.strip() if info else 'N/A'
                 if exclude_titles and should_exclude_job(title, EXCLUDE_TERMS):
                     total_skipped_title += 1
-                    print(f"[SKIP-TITLE] {title} (Total: {total_skipped_title})")
+                    logging.info(f"[SKIP-TITLE] {title} (Total: {total_skipped_title})")
                     continue
                 company = info.find('h4', class_="base-search-card__subtitle").text.strip() if info else 'N/A'
 
@@ -202,7 +217,7 @@ def scrape_linkedin_jobs(position, location, remote, max_jobs):
                 jobs.append(job_info)
             # 
             except Exception as e:
-                print(f"Error processing job: {e}")
+                logging.info(f"Error processing job: {e}")
                 continue
         # write it to csv file
         if jobs:
@@ -210,14 +225,14 @@ def scrape_linkedin_jobs(position, location, remote, max_jobs):
                 writer = csv.DictWriter(f, fieldnames=header)
                 writer.writerows(jobs)
             jobs =[]
-            print(f"[SAVED] Batch saved to {file_name}")
+            logging.info(f"[SAVED] Batch saved to {file_name}")
             time.sleep(1)
 
 if __name__ == "__main__":
 
-    print("=" * 50)
-    print(" Welcome to LinkedIN Job Scraper(unauthenticated version/guest version)")
-    print("=" * 50)
+    logging.info("=" * 50)
+    logging.info(" Welcome to LinkedIN Job Scraper(unauthenticated version/guest version)")
+    logging.info("=" * 50)
 
     title = prompt_required(
         "Enter job title (e.g. software engineer): "
@@ -243,21 +258,19 @@ if __name__ == "__main__":
         "Type of job? (ALL/ON-SITE/REMOTE/HYBRID, default=ALL): "
     )
 
-    print("\nStarting scraping as a guest(unauthenticated)...")
+    # Ask for distance 
+    distance_input = input(
+    "Enter distance in miles (e.g. 5, 10, 25, 50, 100 — press Enter for ALL): "
+    ).strip()
+
+    distance = int(distance_input) if distance_input else None
+
+    logging.info("\nStarting scraping as a guest(unauthenticated)...")
 
     if exclude_titles:
-        print("[FILTER] Filtering out senior/manager/lead positions")
+        logging.info("[FILTER] Filtering out senior/manager/lead positions")
     if remote=='REMOTE':
-        print("[FILTER] Remote jobs only")
-    print(f"remote: {remote}")
+        logging.info("[FILTER] Remote jobs only")
+    logging.info(f"remote: {remote}")
 
-    scrape_linkedin_jobs(title, location, remote, max_jobs)
-
-# Notes for Sebestian
-# How to get more result
-# Split queries:
-# by f_WT (1,2,3)
-# by location granularity (state/city)
-# by time filters (f_TPR)
-# by keywords variations
-
+    scrape_linkedin_jobs(title, location, remote, max_jobs, distance)

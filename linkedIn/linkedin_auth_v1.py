@@ -44,11 +44,13 @@ EXCLUDE_TERMS = {
     # 'consultant'
 }
 
+current_timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
     handlers=[
-        logging.FileHandler("scraper.log", encoding="utf-8"),
+        logging.FileHandler(f"scraper_linkedin_auth_{current_timestamp}.log", encoding="utf-8"),
         logging.StreamHandler(),
     ],
 )
@@ -190,8 +192,8 @@ def scrape_linkedin_jobs(
                 raise
 
         print("Navigating to Linkedin Authentication required")
-        # linkedin_login(driver, EMAIL, PASSWORD)
-        # input("Solve CAPTCHA, then press ENTER to continue...")
+        linkedin_login(driver, EMAIL, PASSWORD)
+        input("Solve CAPTCHA, then press ENTER to continue...")
 
         base_url = (
             "https://www.linkedin.com/jobs/search/"
