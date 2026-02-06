@@ -100,7 +100,7 @@ def should_exclude_job(title: str, exclude_terms: set) -> bool:
 
 
 def create_filename(title, location):
-    date_strf = datetime.datetime.now().strftime("%Y-%m-%d")
+    date_strf = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     pos = title.replace(" ", "_")
     return f"LinkedIn_Jobs_{pos}_{location}_{date_strf}.csv"
 
@@ -114,6 +114,7 @@ def scrape_linkedin_jobs(
     mode_of_work: str,
     headless: bool,
 ):
+    print(f"mode of work: {mode_of_work}")
     options = uc.ChromeOptions()
     if headless:
         options.add_argument("--headless=new")
@@ -150,7 +151,7 @@ def scrape_linkedin_jobs(
     try:
         # Try to create driver with automatic version detection
         try:
-            driver = uc.Chrome(options=options, version_main=144)
+            driver = uc.Chrome(options=options)
         except Exception as e:
             # main_version_string = re.search(r"Current browser version is (\d+\.\d+\.\d+)", str(e)).group(1)
             # main_version = int(main_version_string.split(".")[0])
@@ -192,10 +193,10 @@ def scrape_linkedin_jobs(
         logging.info("Navigating to Linkedin Authentication required")
         # linkedin_login(driver, EMAIL, PASSWORD)
         logging.warning("=" * 80)
+        logging.warning("⚠️  ACTION REQUIRED: SOLVE CAPTCHA IN BROWSER ⚠️")
         logging.warning(
-            "⚠️  ACTION REQUIRED: SOLVE CAPTCHA IN BROWSER (only non headless) ⚠️"
+            "⚠️  If in non headless after solving, return here and press ENTER to continue"
         )
-        logging.warning("⚠️  After solving, return here and press ENTER to continue")
         logging.warning("⚠️  If in headless, just press ENTER to continue")
         logging.warning("=" * 80)
         input("Solve CAPTCHA (non headless mode), then press ENTER to continue...")
@@ -207,7 +208,9 @@ def scrape_linkedin_jobs(
         )
 
         if mode_of_work:
+            print(f"mode of work: {mode_of_work}")
             remote_value = remote_dict.get(mode_of_work, "")
+            print(f"found value for given mode of work: {remote_value}")
             base_url += f"&f_WT={remote_value}"
 
         page = 0
@@ -227,6 +230,7 @@ def scrape_linkedin_jobs(
 
             logging.debug(f"search url: {search_url}")
             driver.get(search_url)
+            print(f"search url: {search_url}")
             time.sleep(random.randint(1, 3))
 
             jobs_data = []
@@ -459,6 +463,7 @@ if __name__ == "__main__":
     mode_of_work = prompt_required(
         "Type of job? (ALL/ON-SITE/REMOTE/HYBRID, default=ALL): "
     )
+    mode_of_work = mode_of_work if mode_of_work else "ALL"
 
     headless_mode = (
         input("Run in headless mode (invisible browser)? (y/n, default=y): ")
@@ -487,8 +492,6 @@ if __name__ == "__main__":
         max_jobs=max_jobs,
         exclude_easy_apply=False,
         exclude_titles=False,
-        mode_of_work="ALL",
+        mode_of_work=mode_of_work,
         headless=headless,
     )
-
-    # this should work
