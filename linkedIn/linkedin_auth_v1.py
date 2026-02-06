@@ -47,7 +47,9 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
     handlers=[
-        logging.FileHandler(f"scraper_linkedin_auth_{current_timestamp}.log", encoding="utf-8"),
+        logging.FileHandler(
+            f"scraper_linkedin_auth_{current_timestamp}.log", encoding="utf-8"
+        ),
         logging.StreamHandler(),
     ],
 )
@@ -190,7 +192,9 @@ def scrape_linkedin_jobs(
         logging.info("Navigating to Linkedin Authentication required")
         # linkedin_login(driver, EMAIL, PASSWORD)
         logging.warning("=" * 80)
-        logging.warning("⚠️  ACTION REQUIRED: SOLVE CAPTCHA IN BROWSER (only non headless) ⚠️")
+        logging.warning(
+            "⚠️  ACTION REQUIRED: SOLVE CAPTCHA IN BROWSER (only non headless) ⚠️"
+        )
         logging.warning("⚠️  After solving, return here and press ENTER to continue")
         logging.warning("⚠️  If in headless, just press ENTER to continue")
         logging.warning("=" * 80)
@@ -253,15 +257,17 @@ def scrape_linkedin_jobs(
                     if job_id:
                         all_job_ids.add(job_id)
 
-                logging.debug(f"Iteration {i+1}: Unique jobs collected on this url: {len(all_job_ids)}")
+                logging.debug(
+                    f"Iteration {i+1}: Unique jobs collected on this url: {len(all_job_ids)}"
+                )
 
                 if len(all_job_ids) >= 25:
-                    logging.debu("All cards on this page are found.")
+                    logging.debug("All cards on this page are found.")
                     break
 
             for card in job_cards:
                 card_num += 1
-                logging.debug(f"Clicking on card: {card_num}")
+                logging.info(f"Clicking on card: {card_num}")
                 try:
                     card.click()
                     time.sleep(random.randint(1, 3))
@@ -281,7 +287,9 @@ def scrape_linkedin_jobs(
 
                     if exclude_titles and should_exclude_job(title, EXCLUDE_TERMS):
                         total_skipped_title += 1
-                        logging.debug(f"[SKIP-TITLE] {title} (Total: {total_skipped_title})")
+                        logging.debug(
+                            f"[SKIP-TITLE] {title} (Total: {total_skipped_title})"
+                        )
                         continue
 
                     if exclude_easy_apply:
@@ -373,7 +381,7 @@ def scrape_linkedin_jobs(
                     total_missed_card += 1
                     logging.error(f"missed card number: {total_missed_card}")
 
-                if max_jobs!= None and card_num >=max_jobs:
+                if max_jobs != None and card_num >= max_jobs:
                     logging.info(f"Maximum jobs target reached! Aborting scraping")
                     abort_scraping = True
                     break
@@ -382,6 +390,7 @@ def scrape_linkedin_jobs(
                 with open(filename, "a", newline="", encoding="utf-8") as f:
                     writer = csv.DictWriter(f, fieldnames=header)
                     writer.writerows(jobs_data)
+                logging.info(f"number of jobs read in this batch: {len(jobs_data)}")
                 logging.info(f"[SAVED] Batch saved to {filename}")
                 time.sleep(1)
             if abort_scraping:
@@ -411,7 +420,9 @@ if __name__ == "__main__":
     logging.info(" Recommendations:")
     logging.info(" - Do NOT use headless mode on the first run.")
     logging.info(" - Create a dedicated folder and use it as your Chrome profile.")
-    logging.info("   This stores cookies, login sessions, local storage, site permissions,")
+    logging.info(
+        "   This stores cookies, login sessions, local storage, site permissions,"
+    )
     logging.info("   and keeps your LinkedIn authentication persistent.")
     logging.info("")
     logging.info(" Special Recommendation:")
@@ -422,12 +433,12 @@ if __name__ == "__main__":
     logging.info(" WARNING:")
     logging.info(" - Do NOT open the same Chrome profile in a normal Chrome window.")
     logging.info(" - Use one profile per browser instance only.")
-    logging.info(" - Reusing or locking the profile may cause browser crashes or login issues.")
+    logging.info(
+        " - Reusing or locking the profile may cause browser crashes or login issues."
+    )
     logging.info("=" * 50)
 
-    title = prompt_required(
-        "Enter job title (e.g. software engineer): "
-    )
+    title = prompt_required("Enter job title (e.g. software engineer): ")
 
     location = prompt_required("Enter location (e.g. Canada): ")
 
@@ -439,21 +450,23 @@ if __name__ == "__main__":
 
     exclude_easy = input(
         "Exclude Easy Apply jobs? (y/n, default=y): "
-    ).strip().lower() in ['y', 'yes']
+    ).strip().lower() in ["y", "yes"]
 
     exclude_titles = input(
         "Exclude senior/manager/lead positions? (y/n, default=y): "
-    ).strip().lower() in ['y', 'yes']
+    ).strip().lower() in ["y", "yes"]
 
     mode_of_work = prompt_required(
         "Type of job? (ALL/ON-SITE/REMOTE/HYBRID, default=ALL): "
     )
 
-    headless_mode = input(
-        "Run in headless mode (invisible browser)? (y/n, default=y): "
-    ).strip().lower()
+    headless_mode = (
+        input("Run in headless mode (invisible browser)? (y/n, default=y): ")
+        .strip()
+        .lower()
+    )
 
-    headless = headless_mode not in ['n', 'no']
+    headless = headless_mode not in ["n", "no"]
 
     logging.info("\nStarting scraping...")
     if headless:
@@ -477,3 +490,5 @@ if __name__ == "__main__":
         mode_of_work="ALL",
         headless=headless,
     )
+
+    # this should work
