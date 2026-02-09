@@ -147,7 +147,7 @@ CHROME_PROFILE_DIR=C:\<xxxxx>\linkedin_profile
    linkedin_login(driver, EMAIL, PASSWORD)
 
 
-## Ziprecruiter Authenticated Scraping Script
+# Ziprecruiter Authenticated Scraping Script
 0. Create a ziprecuiter account
 1. set CHROME_PROFILE_DIR=<C:\CHROME_PROFILE_DIR\> in .env or directly in script
 2. Please run in non headless mode for the first time
