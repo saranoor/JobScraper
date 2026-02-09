@@ -118,7 +118,9 @@ class Ziprecruiter:
         options = uc.ChromeOptions()
         if self.headless:
             options.add_argument("--headless=new")
-
+        # options.add_argument("--no-sandbox")
+        # options.add_argument("--disable-dev-shm-usage")
+        # options.add_argument("--disable-gpu")
         options.add_argument("--start-maximized")
         options.add_argument("--window-size=1920,1080")
         options.add_argument(
@@ -146,7 +148,9 @@ class Ziprecruiter:
                     new_options = uc.ChromeOptions()
                     if self.headless:
                         new_options.add_argument("--headless=new")
-
+                    # options.add_argument("--no-sandbox")
+                    # options.add_argument("--disable-dev-shm-usage")
+                    # options.add_argument("--disable-gpu")
                     new_options.add_argument("--start-maximized")
                     new_options.add_argument("--window-size=1920,1080")
                     new_options.add_argument(f"--user-data-dir={CHROME_PROFILE_DIR}")
@@ -460,7 +464,7 @@ if __name__ == "__main__":
     max_jobs = int(max_jobs_input) if max_jobs_input else None
 
     zipapply_only_input = (
-        input("Only show Quick Apply jobs? (y/n, default n): ").strip().lower()
+        input("Only show Easy/Quick Apply jobs? (y/n, default n): ").strip().lower()
     )
     zipapply_only = True if zipapply_only_input == "y" else False
 

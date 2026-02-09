@@ -147,12 +147,19 @@ CHROME_PROFILE_DIR=C:\<xxxxx>\linkedin_profile
    linkedin_login(driver, EMAIL, PASSWORD)
 
 
-<!-- selenium==4.40.0
-undetected-chromedriver==3.5.5
-python-dotenv==1.2.1
-beautifulsoup4==4.14.3
-requests==2.32.5
-urllib3==2.6.3 
-setuptools==80.10.2 -->
+## Ziprecruiter Authenticated Scraping Script
+0. Create a ziprecuiter account
+1. set CHROME_PROFILE_DIR=<C:\CHROME_PROFILE_DIR\> in .env or directly in script
+2. Please run in non headless mode for the first time
+3. Enter your zip account credentials
+4. if the first run is successfull for  subsequent runs feel free to comment out the following line:
+
+```
+self.driver.get("https://www.ziprecruiter.com/authn/login")
+
+```
+
+
+
 
 
