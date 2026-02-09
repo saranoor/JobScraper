@@ -13,6 +13,7 @@ import undetected_chromedriver as uc
 import logging
 import sys
 import re
+import datetime
 
 # Terms to exclude from job titles
 EXCLUDE_TERMS = {
@@ -61,11 +62,14 @@ REMOTE_PATTERNS = [
     r"hybrid\s+remote",
 ]
 
+current_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
     handlers=[
-        logging.FileHandler("scraper.log", encoding="utf-8"),
+        logging.FileHandler(
+            f"scraper_glassdoor_{current_timestamp}.log", encoding="utf-8"
+        ),
         logging.StreamHandler(),
     ],
 )
@@ -120,7 +124,7 @@ def scrape_glassdoor_jobs(
     remote_only: bool = False,
     headless: bool = True,
 ):
-    filename = f"glassdoor_jobs_{job_title}_{country}.csv"
+    filename = f"glassdoor_jobs_{job_title}_{country}_{current_timestamp}.csv"
     header = [
         "title",
         "company",
@@ -241,6 +245,24 @@ def scrape_glassdoor_jobs(
         total_skipped_title = 0
         total_skipped_remote = 0
 
+        def dismiss_close_popups():
+            try:
+                close_button = WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located(
+                        (
+                            By.CSS_SELECTOR,
+                            "button[class*='Close'], .CloseButton, [aria-label='Close']",
+                        )
+                    )
+                )
+                driver.execute_script("arguments[0].click();", close_button)
+                time.sleep(1)
+            except:
+                try:
+                    driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
+                except:
+                    pass
+
         while True:
             # Check if we reached the target
             if max_jobs and total_scraped >= max_jobs:
@@ -322,28 +344,53 @@ def scrape_glassdoor_jobs(
                     # Extract description by clicking the card
                     description = "N/A"
                     try:
-                        driver.execute_script(
-                            "arguments[0].scrollIntoView({block: 'center'});", card
-                        )
-                        time.sleep(0.5)
                         card.click()
-                        time.sleep(2)
-
-                        # Use the working selector from your third example
-                        try:
-                            desc_el = driver.find_element(
-                                By.CSS_SELECTOR, ".JobDetails_jobDescription__uW_fK"
-                            )
-                            description = desc_el.text.strip()
-                        except:
-                            try:
-                                desc_el = driver.find_element(
+                        logger.info(
+                            f"[INFO] Clicked job card for '{job_title_text}' to load description"
+                        )
+                        time.sleep(1)
+                        dismiss_close_popups()
+                        desc_preview = WebDriverWait(driver, 10).until(
+                            EC.presence_of_element_located(
+                                (
                                     By.CSS_SELECTOR,
                                     "[class*='JobDetails_jobDescription']",
                                 )
-                                description = desc_el.text.strip()
-                            except:
+                            )
+                        )
+                        classes = desc_preview.get_attribute("class")
+                        logger.debug(
+                            f"These classes are found in the description element: {classes}"
+                        )
+
+                        if "blurDescription" in classes:
+                            logger.info("Description is blurred... trying to expand")
+
+                            try:
+                                driver.find_element(
+                                    By.CSS_SELECTOR, "[data-test='show-more-cta']"
+                                ).click()
+                                logger.info(
+                                    "[INFO] Clicked 'Show More' to expand job description"
+                                )
+                                time.sleep(1)
+                                desc_preview = WebDriverWait(driver, 10).until(
+                                    EC.presence_of_element_located(
+                                        (
+                                            By.CSS_SELECTOR,
+                                            "[class*='JobDetails_jobDescription']",
+                                        )
+                                    )
+                                )
+                                logger.info("Description expanded successfully")
+
+                            except Exception as e:
+                                logger.error(
+                                    "Trouble finding or click 'Show More' button, description may be truncated/missing"
+                                )
                                 pass
+
+                        description = desc_preview.text.strip()
 
                     except Exception as e:
                         logger.debug(f"Could not extract description: {e}")
@@ -412,23 +459,7 @@ def scrape_glassdoor_jobs(
                 print(f"[INFO] No more jobs available. Total scraped: {total_scraped}")
                 break
 
-            try:
-                close_button = WebDriverWait(driver, 5).until(
-                    EC.presence_of_element_located(
-                        (
-                            By.CSS_SELECTOR,
-                            "button[class*='Close'], .CloseButton, [aria-label='Close']",
-                        )
-                    )
-                )
-                driver.execute_script("arguments[0].click();", close_button)
-                time.sleep(1)
-            except:
-                try:
-                    driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
-                except:
-                    pass
-
+            dismiss_close_popups()
             time.sleep(random.uniform(1.1, 2.3))
 
         print(f"\n{'='*50}")
