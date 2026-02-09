@@ -20,7 +20,7 @@ from selenium.webdriver.support import expected_conditions as EC
 current_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
     handlers=[
         logging.FileHandler(
@@ -51,28 +51,20 @@ def prompt_required(prompt_text):
 
 
 def get_random_user_agent():
-
-    # headers = [
-    #     {"User-Agent": "Mozilla/5.0"},
-    #     {
-    #         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36"
-    #     },
-    #     {
-    #         "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Mobile Safari/537.36"
-    #     },
-    #     {
-    #         "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Mobile Safari/537.36"
-    #     },
-    #     {
-    #         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36"
-    #     },
-    # ]
-
     headers = [
+        {"User-Agent": "Mozilla/5.0"},
         {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept-Language": "en-US,en;q=0.9",
-        }
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36"
+        },
+        {
+            "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Mobile Safari/537.36"
+        },
+        {
+            "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Mobile Safari/537.36"
+        },
+        {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36"
+        },
     ]
 
     selected_header = random.choice(headers)
@@ -115,9 +107,11 @@ class Ziprecruiter:
     total_skipped_easy = 0
     abort_scraping = False
 
-    def __init__(self, headless=True):
+    def __init__(self, headless=True, except_titles=False, exclude_easy_apply=False):
         self.headless = headless
         self.driver = self._setup_driver()
+        self.exclude_titles = False
+        self.exclude_easy_apply = False
 
     def _setup_driver(self):
         """Initializes undetected_chromedriver with version fallback logic."""
@@ -211,7 +205,7 @@ class Ziprecruiter:
             "company": None,
             "location": None,
             "salary": None,
-            "mode_of_work": "Onsite",  # Default
+            "mode_of_work": "Onsite",
             "link": None,
             "easy_apply": None,
             "employment_type": None,
@@ -222,6 +216,13 @@ class Ziprecruiter:
             data["title"] = self.driver.execute_script(
                 "return arguments[0].innerText;", title_element
             )
+
+            if should_exclude_job(data["title"], EXCLUDE_TERMS):
+                logger.info(
+                    f"Skipping card #{self.card_num} due to excluded title: {data['title']}"
+                )
+                self.total_skipped_title += 1
+                return
 
             data["company"] = card.find_element(
                 By.CSS_SELECTOR, "[data-testid='job-card-company']"
@@ -268,12 +269,33 @@ class Ziprecruiter:
                 By.CSS_SELECTOR, "[data-testid='job-details-scroll-container']"
             ).text
 
-            apply_text = self.driver.find_element(
-                By.CSS_SELECTOR, "button[aria-label*='Apply']"
-            ).text
+        except Exception as e:
+            logger.error(
+                f"An error occurred while extracting job card: {self.card_num}"
+            )
+            logger.error(f"Error details: {e}")
+            self.total_missed_card += 1
+            raise
+
+        try:
+            apply_element = self.driver.find_element(
+                By.CSS_SELECTOR, "[aria-label*='Apply']"
+            )
+            apply_text = apply_element.text.strip()
             logger.debug(f"Apply button text: '{apply_text}'")
             data["easy_apply"] = True if apply_text.lower() == "quick apply" else False
+            apply_url = apply_element.get_attribute("href")
+            data["link"] = apply_url if apply_url else data["link"]
+            if data["easy_apply"] and self.exclude_easy_apply:
+                logger.info(
+                    f"Card #{self.card_num} is a Quick Apply job. So exclude it."
+                )
+                self.total_skipped_easy += 1
+                return
+        except Exception as e:
+            logger.error(f"Error determining easy apply for card #{self.card_num}: {e}")
 
+        try:
             data["employment_type"] = (
                 self.driver.find_element(
                     By.CSS_SELECTOR, "[data-testid='job-details-scroll-container']"
@@ -285,14 +307,11 @@ class Ziprecruiter:
                 .text
             )
             logger.debug(f"employment type text{data.get('employment_type')}")
-
-            self.total_scraped += 1
         except Exception as e:
             logger.error(
-                f"An error occurred while extracting job card: {self.card_num}"
+                f"Error determining employment type for card #{self.card_num}: {e}"
             )
-            logger.error(f"Error details: {e}")
-            self.total_missed_card += 1
+        self.total_scraped += 1
         return data
 
     def scraper_zip_recruiter(
@@ -329,13 +348,13 @@ class Ziprecruiter:
             f"Starting ZipRecruiter scrape | search='{search}' | location='{location}'"
         )
 
-        print("Navigating to ZipRecruiter Login...")
-        # self.driver.get("https://www.ziprecruiter.com/authn/login")
+        logger.info("Navigating to ZipRecruiter Login...")
+        self.driver.get("https://www.ziprecruiter.com/authn/login")
         input("Solve CAPTCHA, then press ENTER to continue...")
-
-        pages = 100 if max_jobs is None else (max_jobs // 20) + 1
+        page = 0
         try:
-            for page in range(0, pages + 1):
+            while not self.abort_scraping:
+                logger.info(f"Processing page {page}...")
                 url = self._generate_url(
                     search=search,
                     location=location,
@@ -349,7 +368,7 @@ class Ziprecruiter:
                     experience_level=experience_level,
                     page=page,
                 )
-                print(f"url: {url}")
+                logger.info(f"Url generated is: {url}")
                 self.driver.get(url)
 
                 container_selector = "section[class*='job_results_two_pane']"
@@ -360,30 +379,48 @@ class Ziprecruiter:
                     )
                 )
 
-                job_cards = self.driver.find_elements(
-                    By.CSS_SELECTOR, f"{container_selector} [data-testid='job-card']"
-                )
-
-                if not job_cards:
+                try:
                     job_cards = self.driver.find_elements(
                         By.CSS_SELECTOR, f"{container_selector} > div"
                     )
+                except Exception as e:
+                    job_cards = self.driver.find_elements(
+                        By.CSS_SELECTOR,
+                        f"{container_selector} [data-testid='job-card']",
+                    )
+                if not job_cards:
+                    logging.warning(f"No job cards found on page {page}.")
+                    break
 
-                print(f"Found {len(job_cards)} job cards.")
+                logger.info(f"Found {len(job_cards)-3} job cards.")
 
                 jobs_data = []
 
                 for _, card in enumerate(job_cards[1:-2]):
-                    print(f"Processing card #{self.card_num + 1} on page {page}...")
+                    logger.info(
+                        f"Processing card #{self.card_num + 1} on page {page}..."
+                    )
                     self.card_num += 1
                     time.sleep(random.randint(1, 2))
-                    jobs_data.append(self.extract_job_data(card))
+
+                    try:
+                        job_info = self.extract_job_data(card)
+                        if job_info is not None:
+                            jobs_data.append(job_info)
+                        if job_info is None:
+                            logger.info(
+                                f"Card #{self.card_num} was skipped due to filters."
+                            )
+                    except Exception as e:
+                        logger.error(
+                            f"Error processing card #{self.card_num} on page {page}: {e}"
+                        )
                     if max_jobs is not None and self.card_num >= max_jobs:
                         logging.info("Maximum jobs target reached! Aborting scraping")
                         self.abort_scraping = True
                         break
 
-                print(f"Extracted data for {len(jobs_data)} jobs on page {page}.")
+                logger.info(f"Extracted data for {len(jobs_data)} jobs on page {page}.")
                 if jobs_data:
                     with open(filename, "a", newline="", encoding="utf-8") as f:
                         writer = csv.DictWriter(f, fieldnames=header)
@@ -393,6 +430,7 @@ class Ziprecruiter:
                 logging.info(f"number of jobs read in this batch: {len(jobs_data)-3}")
                 logging.info(f"[SAVED] Batch saved to {filename}")
                 time.sleep(random.randint(2, 5))
+                page += 1
         except Exception as e:
             logging.error(f"An error occurred: {e}")
         finally:
@@ -410,7 +448,7 @@ class Ziprecruiter:
 if __name__ == "__main__":
 
     logging.info("=" * 50)
-    logging.info(" Welcome to Zip Recruiter Job Scraper (Authentication version)")
+    logging.info(" Welcome to Zip Recruiter Job Scraper (Authentication required)")
     logging.info("=" * 50)
 
     title = "Software Engineer"  # prompt_required("Enter job title (e.g. software engineer): ")
@@ -475,26 +513,31 @@ if __name__ == "__main__":
 
     logging.info("\nStarting scraping...")
 
-    if headless:
-        logging.info("[MODE] Headless (invisible browser)")
-    else:
-        logging.info("[MODE] Visible browser")
+    exclude_title = (
+        input("Do you want to exclude some titles? (y/n, default=y): ").strip().lower()
+    )
+    exclude_title = True if exclude_title in ["y", "yes"] else False
 
-    print(f"title: {title}\n")
-    print(f"location: {location}\n")
-    print(f"zipapply_only: {zipapply_only}\n")
-    print(f"mode_of_work: {mode_of_work}\n")
-    print(f"radius: {distance}\n")
-    print(f"days: {days}\n")
-    print(f"min salary: {min_salary}")
-    print(f"max_salary: {max_salary}")
-    print(f"experience_level: {experience_level}\n")
-    print(f"employment_type: {employment_type}\n")
-    print(f"max_jobs: {max_jobs}\n")
-    print(f"headless: {headless}\n")
+    exclude_easy_apply = (
+        input("Exclude Easy Apply jobs? (y/n, default=n): ").strip().lower()
+    )
+    exclude_easy_apply = True if exclude_easy_apply in ["y", "yes"] else False
 
-    obj = Ziprecruiter(headless=headless)
-    print("Initialized Ziprecruiter scraper object.")
+    if exclude_title:
+        logging.info("[FILTER] Exclude Title (invisible browser)")
+
+    if exclude_easy_apply:
+        logging.info("[FILTER] Exclude Easy Apply jobs")
+
+    obj = Ziprecruiter(
+        headless=headless,
+        except_titles=True,
+        exclude_easy_apply=True,
+    )
+
+    logger.info("Initialized Ziprecruiter scraper object.")
+    logger.info(f"start time {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    start_time = datetime.datetime.now()
     obj.scraper_zip_recruiter(
         search=title,
         location=location,
@@ -508,3 +551,5 @@ if __name__ == "__main__":
         experience_level=experience_level,
         max_jobs=max_jobs,
     )
+    endtime = datetime.datetime.now() - start_time
+    logger.info(f"total time taken {endtime}")
