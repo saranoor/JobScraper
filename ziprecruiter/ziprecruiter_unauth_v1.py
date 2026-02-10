@@ -16,6 +16,8 @@ import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 
 current_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -158,18 +160,6 @@ class Ziprecruiter:
                     return uc.Chrome(options=new_options, version_main=main_version)
 
             raise e
-
-    def dismiss_popups(self):
-        print("Checking for pop-ups...")
-        time.sleep(2)
-        try:
-            # Create an action chain and send the ESCAPE key
-            actions = ActionChains(self.driver)
-            actions.send_keys(Keys.ESCAPE)
-            actions.perform()
-            print("Sent Escape key via ActionChains.")
-        except Exception as e:
-            print(f"Failed to dismiss popup: {e}")
 
     def _generate_url(
         self,
@@ -365,25 +355,26 @@ class Ziprecruiter:
         )
 
         logger.info("Navigating to ZipRecruiter Login...")
-        self.driver.get("https://www.ziprecruiter.com/authn/login")
-        input("Solve CAPTCHA, then press ENTER to continue...")
+        # self.driver.get("https://www.ziprecruiter.com/authn/login")
+        # input("Solve CAPTCHA, then press ENTER to continue...")
         page = 0
         try:
             while not self.abort_scraping:
                 logger.info(f"Processing page {page}...")
-                url = self._generate_url(
-                    search=search,
-                    location=location,
-                    zipapply_only=zip_apply_only,
-                    mode_of_work=mode_of_work,
-                    radius=radius,
-                    days=days,
-                    min_salary=min_salary,
-                    max_salary=max_salary,
-                    employment_type=employment_type,
-                    experience_level=experience_level,
-                    page=page,
-                )
+                # url = self._generate_url(
+                #     search=search,
+                #     location=location,
+                #     zipapply_only=zip_apply_only,
+                #     mode_of_work=mode_of_work,
+                #     radius=radius,
+                #     days=days,
+                #     min_salary=min_salary,
+                #     max_salary=max_salary,
+                #     employment_type=employment_type,
+                #     experience_level=experience_level,
+                #     page=page,
+                # )
+                url = f"https://www.ziprecruiter.com/candidate/search?search={search.replace(' ', '+')}&location={location.replace(' ', '+')}&page={page}"
                 logger.info(f"Url generated is: {url}")
                 self.driver.get(url)
 
@@ -525,7 +516,7 @@ if __name__ == "__main__":
         .lower()
     )
 
-    headless = False  # headless_mode not in ["n", "no"]
+    headless = headless_mode not in ["n", "no"]
 
     logging.info("\nStarting scraping...")
 
