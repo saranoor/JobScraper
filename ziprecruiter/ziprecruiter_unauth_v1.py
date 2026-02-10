@@ -292,6 +292,46 @@ class Ziprecruiter:
         self.total_scraped += 1
         return data
 
+    def _generate_url(
+        self,
+        search,
+        location,
+        zipapply_only,
+        mode_of_work,
+        radius,
+        days,
+        min_salary,
+        max_salary,
+        employment_type,
+        experience_level,
+        page,
+    ):
+        params = {
+            "search": search,
+            "location": location,
+            "radius": radius,
+        }
+        params["refine_by_apply_type"] = "has_zipapply" if zipapply_only else ""
+        params["refine_by_location_type"] = mode_of_work if mode_of_work else ""
+        params["days"] = days if days else ""
+        params["refine_by_salary"] = min_salary if min_salary else ""
+        params["refine_by_salary_ceil"] = max_salary if max_salary else ""
+
+        if employment_type is None:
+            params["refine_by_employment"] = "all"
+        elif employment_type == "all":
+            params["refine_by_employment"] = ""
+        elif employment_type:
+            params["refine_by_employment"] = f"employment_type:{employment_type}"
+
+        params["refine_by_experience_level"] = (
+            ",".join(experience_level) if experience_level else ""
+        )
+
+        params["page"] = f"{page}"
+
+        return f"{self.BASE_URL}?{urlencode(params, quote_via=quote_plus)}"
+
     def scraper_zip_recruiter(
         self,
         *,
@@ -326,12 +366,26 @@ class Ziprecruiter:
             f"Starting ZipRecruiter scrape | search='{search}' | location='{location}'"
         )
 
-        logger.info("Navigating to ZipRecruiter Login...")
+        logger.info("Navigating to ZipRecruiter (No login required)...")
         page = 0
         try:
             while not self.abort_scraping:
                 logger.info(f"Processing page {page}...")
-                url = f"https://www.ziprecruiter.com/candidate/search?search={search.replace(' ', '+')}&location={location.replace(' ', '+')}&page={page}"
+                url = self._generate_url(
+                    search=search,
+                    location=location,
+                    zipapply_only=zip_apply_only,
+                    mode_of_work=mode_of_work,
+                    radius=radius,
+                    days=days,
+                    min_salary=min_salary,
+                    max_salary=max_salary,
+                    employment_type=employment_type,
+                    experience_level=experience_level,
+                    page=page,
+                )
+                print(f"Generated URL: {url}")
+                # url = f"https://www.ziprecruiter.com/candidate/search?search={search.replace(' ', '+')}&location={location.replace(' ', '+')}&page={page}"
                 logger.info(f"Url generated is: {url}")
                 self.driver.get(url)
                 self.dismiss_popups()
