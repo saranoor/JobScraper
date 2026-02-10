@@ -26,7 +26,7 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
     handlers=[
         logging.FileHandler(
-            f"scraper_linkedin_unauth_{current_timestamp}.log", encoding="utf-8"
+            f"scraper_ziprecruiter_unauth_{current_timestamp}.log", encoding="utf-8"
         ),
         logging.StreamHandler(),
     ],
@@ -87,7 +87,7 @@ def create_filename(header, title, location, mode_of_work):
     pos = title.replace(" ", "_")
     filename = f"Ziprecruiter_Jobs_{pos}_{location}"
 
-    if mode_of_work != "ALL":
+    if mode_of_work != "ALL" and mode_of_work is not None:
         filename += f"_{mode_of_work}"
 
     filename += f"_{date_strf}.csv"
@@ -161,45 +161,17 @@ class Ziprecruiter:
 
             raise e
 
-    def _generate_url(
-        self,
-        search,
-        location,
-        zipapply_only,
-        mode_of_work,
-        radius,
-        days,
-        min_salary,
-        max_salary,
-        employment_type,
-        experience_level,
-        page,
-    ):
-        params = {
-            "search": search,
-            "location": location,
-            "radius": radius,
-        }
-        params["refine_by_apply_type"] = "has_zipapply" if zipapply_only else ""
-        params["refine_by_location_type"] = mode_of_work if mode_of_work else ""
-        params["days"] = days if days else ""
-        params["refine_by_salary"] = min_salary if min_salary else ""
-        params["refine_by_salary_ceil"] = max_salary if max_salary else ""
-
-        if employment_type is None:
-            params["refine_by_employment"] = "all"
-        elif employment_type == "all":
-            params["refine_by_employment"] = ""
-        elif employment_type:
-            params["refine_by_employment"] = f"employment_type:{employment_type}"
-
-        params["refine_by_experience_level"] = (
-            ",".join(experience_level) if experience_level else ""
-        )
-
-        params["page"] = f"{page}"
-
-        return f"{self.BASE_URL}?{urlencode(params, quote_via=quote_plus)}"
+    def dismiss_popups(self):
+        print("Checking for pop-ups...")
+        time.sleep(2)
+        try:
+            # Create an action chain and send the ESCAPE key
+            actions = ActionChains(self.driver)
+            actions.send_keys(Keys.ESCAPE)
+            actions.perform()
+            print("Sent Escape key via ActionChains.")
+        except Exception as e:
+            print(f"Failed to dismiss popup: {e}")
 
     def quit(self):
         if self.driver:
@@ -355,29 +327,14 @@ class Ziprecruiter:
         )
 
         logger.info("Navigating to ZipRecruiter Login...")
-        # self.driver.get("https://www.ziprecruiter.com/authn/login")
-        # input("Solve CAPTCHA, then press ENTER to continue...")
         page = 0
         try:
             while not self.abort_scraping:
                 logger.info(f"Processing page {page}...")
-                # url = self._generate_url(
-                #     search=search,
-                #     location=location,
-                #     zipapply_only=zip_apply_only,
-                #     mode_of_work=mode_of_work,
-                #     radius=radius,
-                #     days=days,
-                #     min_salary=min_salary,
-                #     max_salary=max_salary,
-                #     employment_type=employment_type,
-                #     experience_level=experience_level,
-                #     page=page,
-                # )
                 url = f"https://www.ziprecruiter.com/candidate/search?search={search.replace(' ', '+')}&location={location.replace(' ', '+')}&page={page}"
                 logger.info(f"Url generated is: {url}")
                 self.driver.get(url)
-
+                self.dismiss_popups()
                 container_selector = "section[class*='job_results_two_pane']"
 
                 WebDriverWait(self.driver, 10).until(
@@ -511,12 +468,12 @@ if __name__ == "__main__":
     experience_level = [e.strip() for e in exp_input.split(",")] if exp_input else None
 
     headless_mode = (
-        input("Run in headless mode (invisible browser)? (y/n, default=y): ")
+        input("Run in headless mode (invisible browser)? (y/n, default=n): ")
         .strip()
         .lower()
     )
 
-    headless = headless_mode not in ["n", "no"]
+    headless = not headless_mode not in ["n", "no"]
 
     logging.info("\nStarting scraping...")
 
