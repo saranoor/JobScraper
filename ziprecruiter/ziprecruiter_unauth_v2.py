@@ -8,6 +8,7 @@ import os
 import time
 from urllib.parse import urlencode, quote_plus
 from dotenv import load_dotenv
+from selenium.webdriver.common.by import By
 
 current_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -118,9 +119,8 @@ class Ziprecruiter:
     def dismiss_popups(self):
         logging.info("Checking for pop-ups...")
         time.sleep(1)
-        # SeleniumBase has a simpler way to send keys to the page
         try:
-            self.driver.send_keys("body", "\ue00c")  # \ue00c is the Escape Key
+            self.driver.send_keys("body", "\ue00c")
             logging.info("Sent Escape key.")
         except Exception as e:
             logging.error(f"Failed to dismiss popup: {e}")
@@ -142,12 +142,6 @@ class Ziprecruiter:
             "description": None,
         }
         try:
-            from selenium.webdriver.common.by import By
-
-            print(
-                f"card element: {card.get_attribute("id")}..."
-            )  # Print first 500 chars of the card's HTML for debugging
-            # SB allows finding sub-elements directly with CSS selectors
             title_element = card.find_element(By.TAG_NAME, "h2")
             data["title"] = title_element.text.strip()
 
@@ -246,14 +240,6 @@ class Ziprecruiter:
                     time.sleep(1)
                 except Exception as e:
                     data["link"] = None
-
-                    # card_id = card.get_attribute("id")  # returns "job-card-0oVCT..."
-
-                    # Remove the "job-card-" prefix to get the raw UUID
-                    # job_uuid = card_id.replace("job-card-", "")
-
-                    # Build the direct URL
-                    # data["link"] = f"https://www.ziprecruiter.com/jobs/job-{job_uuid}"
 
             if data["easy_apply"] and self.exclude_easy_apply:
                 self.total_skipped_easy += 1
@@ -359,16 +345,13 @@ class Ziprecruiter:
                     page=page,
                 )
 
-                # Use SeleniumBase's UC-specific open method (Very stealthy)
                 self.driver.uc_open_with_reconnect(url, reconnect_time=2)
                 self.dismiss_popups()
 
                 container_selector = "section[class*='job_results_two_pane']"
 
-                # Standard SeleniumBase wait
                 self.driver.wait_for_element(container_selector, timeout=10)
 
-                # Fetch Job Cards
                 job_cards = self.driver.find_elements(
                     f"{container_selector} > div, {container_selector} [data-testid='job-card']"
                 )
