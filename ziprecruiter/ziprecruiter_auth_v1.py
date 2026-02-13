@@ -24,7 +24,7 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
     handlers=[
         logging.FileHandler(
-            f"scraper_linkedin_unauth_{current_timestamp}.log", encoding="utf-8"
+            f"scraper_ziprecruiter_unauth_{current_timestamp}.log", encoding="utf-8"
         ),
         logging.StreamHandler(),
     ],
@@ -158,6 +158,18 @@ class Ziprecruiter:
                     return uc.Chrome(options=new_options, version_main=main_version)
 
             raise e
+
+    def dismiss_popups(self):
+        print("Checking for pop-ups...")
+        time.sleep(2)
+        try:
+            # Create an action chain and send the ESCAPE key
+            actions = ActionChains(self.driver)
+            actions.send_keys(Keys.ESCAPE)
+            actions.perform()
+            print("Sent Escape key via ActionChains.")
+        except Exception as e:
+            print(f"Failed to dismiss popup: {e}")
 
     def _generate_url(
         self,
@@ -513,7 +525,7 @@ if __name__ == "__main__":
         .lower()
     )
 
-    headless = headless_mode not in ["n", "no"]
+    headless = False  # headless_mode not in ["n", "no"]
 
     logging.info("\nStarting scraping...")
 
