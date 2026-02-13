@@ -4,3 +4,4 @@ python-dotenv==1.2.1
 beautifulsoup4==4.14.3
 requests==2.32.5
 urllib3==2.6.3
+setuptools==80.10.2
