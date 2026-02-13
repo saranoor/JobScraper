@@ -52,27 +52,6 @@ def prompt_required(prompt_text):
         logging.info("This field is required. Please try again.\n")
 
 
-def get_random_user_agent():
-    headers = [
-        {"User-Agent": "Mozilla/5.0"},
-        {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36"
-        },
-        {
-            "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Mobile Safari/537.36"
-        },
-        {
-            "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Mobile Safari/537.36"
-        },
-        {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36"
-        },
-    ]
-
-    selected_header = random.choice(headers)
-    return selected_header
-
-
 def should_exclude_job(title: str, exclude_terms: set) -> bool:
     """Check if job title contains any excluded terms."""
     title_lower = title.lower()
@@ -134,7 +113,7 @@ class Ziprecruiter:
             return uc.Chrome(options=options, version_main=144)
 
         except Exception as e:
-            logging.info(f"First attempt failed, detecting Chrome version...")
+            logging.info("First attempt failed, detecting Chrome version...")
             error_msg = str(e)
 
             if "Current browser version is" in error_msg:
