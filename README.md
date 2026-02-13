@@ -148,8 +148,7 @@ CHROME_PROFILE_DIR=C:\<xxxxx>\linkedin_profile
 
 
 # Ziprecruiter Authenticated Scraping Script
-0. Create a ziprecuiter account
-1. set CHROME_PROFILE_DIR=<C:\CHROME_PROFILE_DIR\> in .env or directly in script
+1. Create a ziprecuiter account
 2. Please run in non headless mode for the first time
 3. Enter your zip account credentials
 4. if the first run is successfull for  subsequent runs feel free to comment out the following line:
@@ -159,7 +158,12 @@ self.driver.get("https://www.ziprecruiter.com/authn/login")
 
 ```
 
+# Ziprecruiter UnAuthenticated Scraping Script
 
+to run ziprecruiter\ziprecruiter_unauth_v2.py
+```
+pip install seleniumbase
+```
 
 
 
