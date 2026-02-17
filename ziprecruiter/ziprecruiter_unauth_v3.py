@@ -99,22 +99,19 @@ def should_exclude_job(title: str, exclude_terms: set) -> bool:
 
 
 def determine_work_mode(location_text: str, description_text: str):
-    modes = []
+    modes = set()
     remote_match = re.search(REMOTE_PATTERN, location_text, re.IGNORECASE)
 
+    loc_lower = location_text.lower()
+
     if remote_match or "#li-remote" in description_text.lower():
-        modes.append(remote_match.group(0) if remote_match else "Remote")
+        modes.add("Remote")
 
-    if "hybrid" in location_text.lower() or "hybrid" in description_text.lower():
-        modes.append("Hybrid")
+    if "hybrid" in loc_lower:
+        modes.add("Hybrid")
 
-    if (
-        "onsite" in location_text.lower()
-        or "on-site" in location_text.lower()
-        or "onsite" in description_text.lower()
-        or "on-site" in description_text.lower()
-    ):
-        modes.append("Onsite")
+    if "onsite" in loc_lower or "on-site" in loc_lower:
+        modes.add("Onsite")
 
     if not modes:
         return "Onsite"
@@ -228,7 +225,7 @@ class Ziprecruiter:
 
             logger.info(f"Processing card #{self.card_num}: {data['title']}")
 
-            if should_exclude_job(data["title"], EXCLUDE_TERMS):
+            if self.exclude_titles and should_exclude_job(data["title"], EXCLUDE_TERMS):
                 logger.info(
                     f"Skipping card #{self.card_num} (Excluded Title): {data['title']}"
                 )
@@ -284,8 +281,8 @@ class Ziprecruiter:
                 logger.warning(f"Description not found for card #{self.card_num}: {e}")
                 data["description"] = ""
 
-            # although if we work_of_model is "only_remote" ziprecuriter it is naturally expected to show remote only jobs,
-            # however, we have found some jobs that are either not remote or remote as well hybrid/onsite but they are still showing up,
+            # although if we mode_of_work is "only_remote" ziprecuriter it is naturally expected to show remote only jobs,
+            # however, it is found some jobs that are either not remote or remote as well hybrid/onsite but they are still showing up,
             # so this is also applied when the mode of work is remote, to make sure we are getting the correct mode of work for each job
             data["mode_of_work"] = determine_work_mode(full_text, data["description"])
 
@@ -406,7 +403,7 @@ class Ziprecruiter:
                     employment_type=employment_type,
                     page=page,
                 )
-
+                print(f"\nNavigating to page {page}: {url}")
                 self.driver.uc_open_with_reconnect(url, reconnect_time=2)
                 self.dismiss_popups()
 
@@ -501,7 +498,7 @@ if __name__ == "__main__":
     logging.info("\nStarting scraping...")
 
     exclude_title = (
-        input("Do you want to exclude some titles? (y/n, default=y): ").strip().lower()
+        input("Do you want to exclude some titles? (y/n, default=n): ").strip().lower()
     )
     exclude_title = True if exclude_title in ["y", "yes"] else False
 
