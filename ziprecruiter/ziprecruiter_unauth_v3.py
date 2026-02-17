@@ -10,10 +10,7 @@ from urllib.parse import urlencode, quote_plus
 from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
 import sys
-import winsound
 
-frequency = 1000
-duration = 500
 current_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 logging.basicConfig(
@@ -98,26 +95,37 @@ def should_exclude_job(title: str, exclude_terms: set) -> bool:
     return False
 
 
-def determine_work_mode(location_text: str, description_text: str):
+def determine_work_mode(
+    location_text: str, employment_type_header, description_text: str
+):
     modes = set()
     remote_match = re.search(REMOTE_PATTERN, location_text, re.IGNORECASE)
 
     loc_lower = location_text.lower()
+    emp_lower = employment_type_header.lower() if employment_type_header else ""
 
-    if remote_match or "#li-remote" in description_text.lower():
+    if (
+        remote_match
+        or "#li-remote" in description_text.lower()
+        or "remote" in emp_lower
+    ):
         modes.add("Remote")
 
-    if "hybrid" in loc_lower:
+    if "hybrid" in loc_lower or "hybrid" in emp_lower:
         modes.add("Hybrid")
 
-    if "onsite" in loc_lower or "on-site" in loc_lower:
+    if (
+        "onsite" in loc_lower
+        or "on-site" in loc_lower
+        or "onsite" in emp_lower
+        or "on-site" in emp_lower
+    ):
         modes.add("Onsite")
 
     if not modes:
         return "Onsite"
 
-    winsound.Beep(frequency, duration)
-    print(f"Determined work modes: {modes} for location text: '{location_text}'")
+    logger.debug(f"Determined work modes: {modes} for location text: '{location_text}'")
     return " / ".join(modes)
 
 
@@ -281,10 +289,24 @@ class Ziprecruiter:
                 logger.warning(f"Description not found for card #{self.card_num}: {e}")
                 data["description"] = ""
 
-            # although if we mode_of_work is "only_remote" ziprecuriter it is naturally expected to show remote only jobs,
-            # however, it is found some jobs that are either not remote or remote as well hybrid/onsite but they are still showing up,
-            # so this is also applied when the mode of work is remote, to make sure we are getting the correct mode of work for each job
-            data["mode_of_work"] = determine_work_mode(full_text, data["description"])
+            try:
+                employment_type_header = self.driver.get_text(
+                    "[data-testid='job-details-scroll-container'] p.text-primary.normal-case.text-body-md"
+                )
+                logger.debug(f"employemnt type header: {employment_type_header}")
+            except Exception as e:
+                logger.warning(f"Location not found: {e}")
+                employment_type_header = ""
+
+            logger.debug(f"employment type header: {employment_type_header}")
+
+            # Note: If mode_of_work is "only_remote", ziprecuriter is expected to show remote only jobs,
+            # however, it is found some jobs that are shown are also onsite, hybrid or remote,
+            # so the following check is applied to determine every the mode of work whatever the mode of work
+            # user have selected, to make sure we are getting the correct mode of work for each job.
+            data["mode_of_work"] = determine_work_mode(
+                full_text, employment_type_header, data["description"]
+            )
 
             apply_element = self.driver.find_element("[aria-label*='Apply']")
             apply_text = apply_element.text.strip().lower()
@@ -495,8 +517,6 @@ if __name__ == "__main__":
 
     headless = False  # headless_mode not in ["n", "no"]
 
-    logging.info("\nStarting scraping...")
-
     exclude_title = (
         input("Do you want to exclude some titles? (y/n, default=n): ").strip().lower()
     )
@@ -506,6 +526,8 @@ if __name__ == "__main__":
         input("Exclude Easy Apply/Zip Apply jobs? (y/n, default=n): ").strip().lower()
     )
     exclude_easy_apply = True if exclude_easy_apply in ["y", "yes"] else False
+
+    logging.info("\nStarting scraping...")
 
     if exclude_title:
         logging.info("[FILTER] Exclude Title")
